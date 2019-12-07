@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -29,78 +30,72 @@ func NewTwitterClient() *twitter.Client {
 }
 
 type TweetStream struct {
-	stream    *twitter.Stream
-	demux     twitter.SwitchDemux
-	tweetChan chan *twitter.Tweet
+	client          *twitter.Client
+	hashtags        []string
+	tweetChan       chan twitter.Tweet
+	mostRecentTweet *twitter.Tweet
 }
 
-func NewTweetStream(client *twitter.Client, hashtags []string, outTweetChan chan *twitter.Tweet) *TweetStream {
+func NewTweetStream(client *twitter.Client, hashtags []string, outTweetChan chan twitter.Tweet) *TweetStream {
+	return &TweetStream{client, hashtags, outTweetChan, nil}
+}
 
-	demux := twitter.NewSwitchDemux()
-	demux.Tweet = func(tweet *twitter.Tweet) {
-		outTweetChan <- tweet
+func (tweetStream TweetStream) QueryRecentTweets(latestTweetID int64) ([]twitter.Tweet, int64) {
+	query := strings.Join(tweetStream.hashtags[:], " OR ")
+	searchParams := twitter.SearchTweetParams{
+		Query:     query,
+		Count:     30,
+		TweetMode: "extended",
+		SinceID:   latestTweetID,
 	}
 
-	filterParams := &twitter.StreamFilterParams{
-		Track:         hashtags,
-		StallWarnings: twitter.Bool(true),
-	}
-	stream, err := client.Streams.Filter(filterParams)
+	search, _, err := tweetStream.client.Search.Tweets(&searchParams)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return &TweetStream{stream, demux, outTweetChan}
+	return search.Statuses, search.Metadata.MaxID
 }
 
-func (tweetStream TweetStream) Start() {
-	fmt.Println("Starting Stream...")
+func (tweetStream TweetStream) Write() {
+	fmt.Println("Writing Stream...")
 
-	go tweetStream.demux.HandleChan(tweetStream.stream.Messages)
-}
+	latestTweetID := int64(0)
 
-func (tweetStream TweetStream) Stop() {
-	fmt.Println("Stopping Stream...")
-	tweetStream.stream.Stop()
+	for {
+		tweets, maxID := tweetStream.QueryRecentTweets(latestTweetID)
+		latestTweetID = maxID
+
+		for _, tweet := range tweets {
+			tweetStream.tweetChan <- tweet
+		}
+	}
 }
 
 type TweetStorage struct {
 	hashtags  []string
 	tweets    map[string][]*twitter.Tweet
-	tweetChan chan *twitter.Tweet
+	tweetChan chan twitter.Tweet
 }
 
-func NewTweetStorage(hashtags []string, inTweetChan chan *twitter.Tweet) *TweetStorage {
+func NewTweetStorage(hashtags []string, inTweetChan chan twitter.Tweet) *TweetStorage {
 	tweets := make(map[string][]*twitter.Tweet)
 
 	return &TweetStorage{hashtags, tweets, inTweetChan}
 }
 
-func (storage TweetStorage) ReadStream() {
-	fmt.Println("Starting Storage...")
+func (storage TweetStorage) Read() {
+	fmt.Println("Writeing Storage...")
 	for {
 		mainTweet := <-storage.tweetChan
 
-		tweet := mainTweet
-		if mainTweet.Retweeted == true {
-			tweet = mainTweet.RetweetedStatus
-			fmt.Println("IM RETWEET")
-		}
-		extendedTweet := tweet.ExtendedTweet
-		if extendedTweet != nil {
-			fmt.Println("EXTENDED")
-		}
+		tweet := &mainTweet
 
 		fmt.Println(tweet.User.Name)
 		fmt.Println(tweet.Text)
 		fmt.Println(tweet.CreatedAt)
 		fmt.Println(tweet.Entities.Hashtags)
-		if extendedTweet != nil {
-			fmt.Println(extendedTweet.Entities.Hashtags)
-		}
-		if mainTweet.Retweeted == true {
-			fmt.Println(mainTweet.Entities.Hashtags)
-		}
 		fmt.Println("---------------------------------------------------------------------------")
 		// storage.tweets
 	}
@@ -119,21 +114,18 @@ func (storage TweetStorage) QueryTweets(hashtags []string, date time.Time) []*Tw
 }
 
 func main() {
-	client := NewTwitterClient()
-	hashtags := []string{"#MrRobot", "#sverige", "#svenska", "#brexit"}
+	hashtags := []string{"#MrRobot"}
 
-	tweetChan := make(chan *twitter.Tweet, 20)
+	tweetChan := make(chan twitter.Tweet, 20)
+
 	tweetStorage := NewTweetStorage(hashtags, tweetChan)
-	go tweetStorage.ReadStream()
-	tweetStream := NewTweetStream(client, hashtags, tweetChan)
+	go tweetStorage.Read()
 
-	tweetStream.Start()
+	tweetStream := NewTweetStream(NewTwitterClient(), hashtags, tweetChan)
+	go tweetStream.Write()
 
 	// Wait for SIGINT and SIGTERM (HIT CTRL-C)
 	osChan := make(chan os.Signal)
 	signal.Notify(osChan, syscall.SIGINT, syscall.SIGTERM)
 	log.Println(<-osChan)
-
-	tweetStream.Stop()
-
 }
