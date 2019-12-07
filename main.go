@@ -14,7 +14,7 @@ func main() {
 
 	tweetChan := make(chan twitter.Tweet, 30)
 
-	tweetStream := newTweetStream(newTwitterClient(), hashtags, tweetChan)
+	tweetStream := newTweetStream(newTwitterClientFromEnv(), hashtags, tweetChan)
 	tweetStorage := newTweetStorage(hashtags, tweetChan)
 
 	go tweetStream.Write()

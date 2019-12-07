@@ -12,7 +12,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-func newTwitterClient() *twitter.Client {
+func newTwitterClientFromEnv() *twitter.Client {
 	config := &clientcredentials.Config{
 		ClientID:     os.Getenv("TWITTER_CONSUMER_KEY"),
 		ClientSecret: os.Getenv("TWITTER_CONSUMER_SECRET"),
@@ -27,6 +27,20 @@ func newTwitterClient() *twitter.Client {
 	client := twitter.NewClient(httpClient)
 
 	return client
+}
+
+// Helper function to smartly sleep coroutines according to the `RateLimitResource`
+func sleepPerRateLimit(rateLimit *twitter.RateLimitResource) {
+	if rateLimit.Remaining == 0 {
+		timeToReset := time.Unix(int64(rateLimit.Reset), 0)
+		durationUntilReset := time.Now().Sub(timeToReset)
+		time.Sleep(durationUntilReset)
+	} else {
+		requestsPerMin := rateLimit.Limit / 15
+		secsBetweenRequests := 60 / requestsPerMin
+		sleepDuration := time.Duration(secsBetweenRequests * 1000000000)
+		time.Sleep(sleepDuration)
+	}
 }
 
 type tweetStream struct {
@@ -60,9 +74,9 @@ func (tweetStream tweetStream) queryRecentTweets(latestTweetID int64) ([]twitter
 }
 
 func (tweetStream tweetStream) Write() {
+	// Coroutine for reading current rate limits
 	go func() {
 		for {
-			fmt.Println("**QUERYING APP**")
 			rateLimits, _, err := tweetStream.client.RateLimits.Status(&twitter.RateLimitParams{Resources: []string{"application", "search"}})
 
 			if err != nil {
@@ -71,48 +85,24 @@ func (tweetStream tweetStream) Write() {
 
 			tweetStream.rateLimits = rateLimits
 			rateStatusLimit := tweetStream.rateLimits.Resources.Application["/application/rate_limit_status"]
-
-			if rateStatusLimit.Remaining == 0 {
-				timeToReset := time.Unix(int64(rateStatusLimit.Reset), 0)
-				durationUntilReset := time.Now().Sub(timeToReset)
-				fmt.Println("APP REM: ", durationUntilReset)
-				time.Sleep(durationUntilReset)
-			} else {
-				requestsPerMin := rateStatusLimit.Limit / 15
-				secsBetweenRequests := 60 / requestsPerMin
-				sleepDuration := time.Duration(secsBetweenRequests * 1000000000)
-				fmt.Println("APP: ", sleepDuration)
-				time.Sleep(sleepDuration)
-			}
+			sleepPerRateLimit(rateStatusLimit)
 		}
 	}()
 
 	latestTweetID := int64(0)
 
 	for {
-		fmt.Println("**QUERYING TWEETS**")
-
 		tweets, maxID := tweetStream.queryRecentTweets(latestTweetID)
 		latestTweetID = maxID
 
 		for i := range tweets {
+			// We `Write` the tweets in reverse because `tweets` is ordered by decreasing date
 			tweet := tweets[len(tweets)-1-i]
 			tweetStream.tweetChan <- tweet
 		}
 
 		tweetLimit := tweetStream.rateLimits.Resources.Search["/search/tweets"]
-		if tweetLimit.Remaining == 0 {
-			timeToReset := time.Unix(int64(tweetLimit.Reset), 0)
-			durationUntilReset := time.Now().Sub(timeToReset)
-			fmt.Println("TWEET REM: ", durationUntilReset)
-			time.Sleep(durationUntilReset)
-		} else {
-			requestsPerMin := tweetLimit.Limit / 15
-			secsBetweenRequests := 60 / requestsPerMin
-			sleepDuration := time.Duration(secsBetweenRequests * 1000000000)
-			fmt.Println("TWEET: ", sleepDuration)
-			time.Sleep(sleepDuration)
-		}
+		sleepPerRateLimit(tweetLimit)
 	}
 }
 
