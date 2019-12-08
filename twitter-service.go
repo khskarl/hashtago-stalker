@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -46,16 +47,15 @@ func sleepPerRateLimit(rateLimit *twitter.RateLimitResource) {
 type tweetStream struct {
 	client          *twitter.Client
 	hashtags        []string
-	tweetChan       chan twitter.Tweet
 	mostRecentTweet *twitter.Tweet
 	rateLimits      *twitter.RateLimit
 }
 
-func newTweetStream(client *twitter.Client, hashtags []string, outTweetChan chan twitter.Tweet) *tweetStream {
-	return &tweetStream{client, hashtags, outTweetChan, nil, nil}
+func newTweetStream(client *twitter.Client, hashtags []string) *tweetStream {
+	return &tweetStream{client, hashtags, nil, nil}
 }
 
-func (tweetStream tweetStream) queryRecentTweets(latestTweetID int64) ([]twitter.Tweet, int64) {
+func (tweetStream *tweetStream) fetchRecentTweets(latestTweetID int64) ([]twitter.Tweet, int64) {
 	query := strings.Join(tweetStream.hashtags[:], " OR ")
 	searchParams := twitter.SearchTweetParams{
 		Query:     query,
@@ -73,7 +73,7 @@ func (tweetStream tweetStream) queryRecentTweets(latestTweetID int64) ([]twitter
 	return search.Statuses, search.Metadata.MaxID
 }
 
-func (tweetStream tweetStream) Write() {
+func (tweetStream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 	// Coroutine for reading current rate limits
 	go func() {
 		for {
@@ -92,13 +92,13 @@ func (tweetStream tweetStream) Write() {
 	latestTweetID := int64(0)
 
 	for {
-		tweets, maxID := tweetStream.queryRecentTweets(latestTweetID)
+		tweets, maxID := tweetStream.fetchRecentTweets(latestTweetID)
 		latestTweetID = maxID
 
 		for i := range tweets {
 			// We `Write` the tweets in reverse because `tweets` is ordered by decreasing date
 			tweet := tweets[len(tweets)-1-i]
-			tweetStream.tweetChan <- tweet
+			outTweetChan <- tweet
 		}
 
 		tweetLimit := tweetStream.rateLimits.Resources.Search["/search/tweets"]
@@ -107,26 +107,49 @@ func (tweetStream tweetStream) Write() {
 }
 
 type tweetStorage struct {
-	hashtags  []string
-	tweets    map[string][]*twitter.Tweet
-	tweetChan chan twitter.Tweet
+	tweets []twitter.Tweet
 }
 
-func newTweetStorage(hashtags []string, inTweetChan chan twitter.Tweet) *tweetStorage {
-	tweets := make(map[string][]*twitter.Tweet)
-	return &tweetStorage{hashtags, tweets, inTweetChan}
+func newTweetStorage() *tweetStorage {
+	tweets := make([]twitter.Tweet, 0)
+	return &tweetStorage{tweets}
 }
 
-func (storage tweetStorage) Read() {
+func (storage *tweetStorage) Read(inTweetChan chan twitter.Tweet) {
 	for {
-		mainTweet := <-storage.tweetChan
+		tweet := <-inTweetChan
 
-		tweet := &mainTweet
+		fmt.Println("len(storage.tweets): ", len(storage.tweets))
 
-		fmt.Println(tweet.User.Name)
-		fmt.Println(tweet.FullText)
+		storage.tweets = append(storage.tweets, tweet)
+
+		// fmt.Println(tweet.User.Name)
+		// fmt.Println(tweet.FullText)
 		fmt.Println(tweet.CreatedAt)
-		fmt.Println(tweet.Entities.Hashtags)
+		// fmt.Println(tweet.Entities.Hashtags)
 		fmt.Println("---------------------------------------------------------------------------")
 	}
+}
+
+func (storage *tweetStorage) QueryByTime(time time.Time) []twitter.Tweet {
+	// for storage.
+	fmt.Println("len(storage.tweets): ", len(storage.tweets))
+	fmt.Println("storage.tweets: ", storage.tweets)
+
+	startTimeIndex := sort.Search(len(storage.tweets), func(i int) bool {
+		createdAt, _ := storage.tweets[i].CreatedAtTime()
+		return createdAt.After(time) || createdAt.Equal(time)
+	})
+
+	queriedTweets := make([]twitter.Tweet, 0)
+
+	for i := startTimeIndex; i < len(storage.tweets); i++ {
+		createdAt, _ := storage.tweets[i].CreatedAtTime()
+
+		if createdAt.After(time) || createdAt.Equal(time) {
+			queriedTweets = append(queriedTweets, storage.tweets[i])
+		}
+	}
+
+	return queriedTweets
 }
