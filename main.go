@@ -1,19 +1,31 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
+	"net/http"
+	"net/url"
+	"os"
 
 	"github.com/dghubble/go-twitter/twitter"
 )
 
-func printStorageInfo(storage *tweetStorage) {
-	fmt.Println("***")
-	for _, tweet := range storage.tweets {
-		time, _ := tweet.CreatedAtTime()
-		fmt.Println(time)
+func tweetsHandler(w http.ResponseWriter, r *http.Request) {
+	u, err := url.Parse(r.URL.String())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+		return
 	}
-	fmt.Println("***")
+
+	params := u.Query()
+	fmt.Println(params)
+	hashtags := params.Get("q")
+
+	fmt.Println("Hashtags are is: ", hashtags)
+	// time := time.Now().AddDate(0, 0, -1)
+	// tweets := tweetStorage.QueryByTime(time)
+	json.NewEncoder(w).Encode("hey")
 }
 
 func main() {
@@ -27,26 +39,14 @@ func main() {
 	go tweetStream.Write(storeChan)
 	go tweetStorage.Read(storeChan)
 
-	for {
-		go printStorageInfo(tweetStorage)
-		var date time.Time
-		for {
-			var dateStr string
-			fmt.Scanln(&dateStr)
-
-			// str := 2019-12-08T05:31:41.000Z
-			var err error
-			date, err = time.Parse(time.RFC3339, dateStr)
-			if err == nil {
-				break
-			}
-		}
-		tweets := tweetStorage.QueryByTime(date)
-		fmt.Println(tweets)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
 	}
 
-	// Wait for SIGINT and SIGTER5M (HIT CTRL-C)
-	// osChan := make(chan os.Signal)
-	// signal.Notify(osChan, syscall.SIGINT, syscall.SIGTERM)
-	// log.Println(<-osChan)
+	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.Dir("assets/")))
+	mux.HandleFunc("/tweets", tweetsHandler)
+	fmt.Println("Listening at port ", port)
+	http.ListenAndServe(":"+port, mux)
 }
