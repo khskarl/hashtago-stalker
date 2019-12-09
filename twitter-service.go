@@ -131,7 +131,7 @@ func (storage *tweetStorage) Read(inTweetChan chan twitter.Tweet) {
 	}
 }
 
-func (storage *tweetStorage) QueryByTime(time time.Time) []twitter.Tweet {
+func (storage tweetStorage) QueryByTime(time time.Time) []twitter.Tweet {
 	startTimeIndex := sort.Search(len(storage.tweets), func(i int) bool {
 		createdAt, _ := storage.tweets[i].CreatedAtTime()
 		return createdAt.After(time) || createdAt.Equal(time)

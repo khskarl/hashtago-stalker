@@ -4,44 +4,25 @@
 <head>
   <title>Gophitter</title>
   <link rel="stylesheet" href="/css/main.css" />
+  <script src="/js/main.js"></script>
 </head>
 
 <body>
   <main class="container-wrapper">
     <div class="search-wrapper">
-      <input type="search" autocomplete="off" name="search" class="search"
+      <input id="search" type="search" autocomplete="off" name="search" class="search"
         placeholder="Track hashtags, examples: #CycleToWork #citybike" />
     </div>
 
     <div class="container tweet-list-wrapper">
-      <ul class="tweet-list">
-        <li class="tweet">
-          <div class=tweet-header>
-            <span class="tweet-user">Gopherson</span>
-            <span class="tweet-date">01/01/2020</span>
-          </div>
-
-          <div class="tweet-text">I'm creating a new unique app called Gophitter!</div>
-        </li>
-        <li class="tweet">
-          <div class=tweet-header>
-            <span class="tweet-user">Gopherson</span>
-            <span class="tweet-date">01/01/2020</span>
-          </div>
-
-          <div class="tweet-text">I'm creating a new unique app called Gophitter!</div>
-        </li>
-
+      <ul id="tweet-list" class="tweet-list">
       </ul>
     </div>
   </main>
 
   <aside class="container-wrapper">
     <h2>↴ Tracking </h2>
-    <ul class="container hashtag-list">
-      <li class="hashtag">
-        #CycleToWork
-      </li>
+    <ul id="hashtag-list" class="container hashtag-list">
       <li class="hashtag">
         #citybike
       </li>

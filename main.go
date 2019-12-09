@@ -6,9 +6,17 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
 )
+
+type tweetView struct {
+	ID        int64  `json:"id"`
+	User      string `json:"user"`
+	Text      string `json:"text"`
+	CreatedAt string `json:"created_at"`
+}
 
 func tweetsHandler(w http.ResponseWriter, r *http.Request) {
 	u, err := url.Parse(r.URL.String())
@@ -21,23 +29,36 @@ func tweetsHandler(w http.ResponseWriter, r *http.Request) {
 	params := u.Query()
 	fmt.Println(params)
 	hashtags := params.Get("q")
+	fmt.Println("Hashtags are : ", hashtags)
 
-	fmt.Println("Hashtags are is: ", hashtags)
-	// time := time.Now().AddDate(0, 0, -1)
-	// tweets := tweetStorage.QueryByTime(time)
-	json.NewEncoder(w).Encode("hey")
+	time := time.Now().AddDate(0, 0, -1)
+	tweets := storage.QueryByTime(time)
+	views := make([]tweetView, 0)
+	for _, tweet := range tweets {
+		tweetView := tweetView{
+			tweet.ID,
+			tweet.User.Name,
+			tweet.FullText,
+			tweet.CreatedAt,
+		}
+
+		views = append(views, tweetView)
+	}
+	json.NewEncoder(w).Encode(views)
 }
+
+var storage *tweetStorage
 
 func main() {
 	hashtags := []string{"#treebybike"}
 
 	tweetStream := newTweetStream(newTwitterClientFromEnv(), hashtags)
-	tweetStorage := newTweetStorage()
+	storage = newTweetStorage()
 
 	storeChan := make(chan twitter.Tweet, 30)
 
 	go tweetStream.Write(storeChan)
-	go tweetStorage.Read(storeChan)
+	go storage.Read(storeChan)
 
 	port := os.Getenv("PORT")
 	if port == "" {
