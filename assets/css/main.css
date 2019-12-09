@@ -1,3 +1,22 @@
-.search-input {
-  background: red;
+html {
+  background-color: #ddd;
+}
+
+.main {
+  background-color: #fff;
+  position: relative;
+  transform: translate(50%, 10%);
+  width: 50%;
+
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px #ccc;
+}
+
+.tweets-wrapper {
+  margin: 0 24px 24px;
+  padding: 24px;
+}
+
+.search {
+  width: 100%;
 }

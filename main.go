@@ -43,10 +43,10 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
+	fmt.Println("Listening at port ", port)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("assets/")))
 	mux.HandleFunc("/tweets", tweetsHandler)
-	fmt.Println("Listening at port ", port)
 	http.ListenAndServe(":"+port, mux)
 }
