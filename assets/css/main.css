@@ -2,21 +2,88 @@ html {
   background-color: #ddd;
 }
 
-.main {
-  background-color: #fff;
+body {
+  font-size: 15px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
+  display: flex;
+  flex-direction: row;
+
   position: relative;
-  transform: translate(50%, 10%);
-  width: 50%;
+  transform: translate(40%, 10%);
+  width: 60%;
+}
+
+ul {
+  list-style-type:none;
+  padding-inline-start: 0px;
+}
+
+main {
+  width: 60%;
+}
+
+aside {
+  width: 40%;
+}
+
+.container-wrapper {
+  margin: 10px;
+}
+
+.container {
+  background-color: #fff;
 
   border-radius: 8px;
   box-shadow: 0px 4px 8px #ccc;
 }
 
-.tweets-wrapper {
-  margin: 0 24px 24px;
-  padding: 24px;
+.search {
+  height: 46px;
+  width: 100%;
+
+  border-style: dashed;
+  border-width: 1px;
 }
 
-.search {
+input[type=search] {
+  font-size: 15px;
   width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.tweet-list-wrapper {
+  padding: 12px 32px;
+}
+
+.tweet {
+  background-color: #fff;
+  padding: 0px 0px 12px 0px;
+}
+
+.tweet-user {
+  color: #444;
+  font-weight: 700;
+}
+
+.tweet-date {
+  color: #999;
+  font-size: 1.0vh;
+  float: right;
+}
+
+.tweet-text {
+  color: #222;
+}
+
+.hashtag-list {
+  padding: 10px;
+}
+
+.hashtag {
+  margin: 4px;
 }

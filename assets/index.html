@@ -7,33 +7,46 @@
 </head>
 
 <body>
-  <main class="main">
+  <main class="container-wrapper">
     <div class="search-wrapper">
-      <input type="text" name="search" class="search" value="" />
+      <input type="search" autocomplete="off" name="search" class="search"
+        placeholder="Track hashtags, examples: #CycleToWork #citybike" />
     </div>
 
-    <div class="tweets-wrapper">
-      <ul class="tweets">
+    <div class="container tweet-list-wrapper">
+      <ul class="tweet-list">
         <li class="tweet">
-          <div class="tweet-user">Gopherson</div>
+          <div class=tweet-header>
+            <span class="tweet-user">Gopherson</span>
+            <span class="tweet-date">01/01/2020</span>
+          </div>
+
           <div class="tweet-text">I'm creating a new unique app called Gophitter!</div>
-          <div class="tweet-date">01/01/2020</div>
+        </li>
+        <li class="tweet">
+          <div class=tweet-header>
+            <span class="tweet-user">Gopherson</span>
+            <span class="tweet-date">01/01/2020</span>
+          </div>
+
+          <div class="tweet-text">I'm creating a new unique app called Gophitter!</div>
         </li>
 
-        <li class="tweet">
-          <div class="tweet-user">Gopherson</div>
-          <div class="tweet-text">I'm creating a new unique app called Gophitter!</div>
-          <div class="tweet-date">01/01/2020</div>
-        </li>
-
-        <li class="tweet">
-          <div class="tweet-user">Gopherson</div>
-          <div class="tweet-text">I'm creating a new unique app called Gophitter!</div>
-          <div class="tweet-date">01/01/2020</div>
-        </li>
       </ul>
     </div>
   </main>
+
+  <aside class="container-wrapper">
+    <h2>↴ Tracking </h2>
+    <ul class="container hashtag-list">
+      <li class="hashtag">
+        #CycleToWork
+      </li>
+      <li class="hashtag">
+        #citybike
+      </li>
+    </ul>
+  </aside>
 </body>
 
 </html>
