@@ -33,15 +33,12 @@ let tweets = [
 let hashtags = []
 
 document.addEventListener("DOMContentLoaded", function () {
-  getTweets()
-
   // Get main elements
   gElemTweetList = document.getElementById('tweet-list')
   gElemHashtagList = document.getElementById('hashtag-list')
   gElemSearchInput = document.getElementById('search')
 
   // Prepopulate main elements
-  // tweets.forEach(tweet => appendTweet(tweet))
   let prepopulation = ["CycleToWork", "CityBike"]
   prepopulation.forEach(hashtag => addHashtag(hashtag))
 
@@ -53,6 +50,9 @@ document.addEventListener("DOMContentLoaded", function () {
       gElemSearchInput.value = ''
     }
   });
+
+  getTweets()
+  setInterval(getTweets, 5000)
 });
 
 function getTweets() {
@@ -62,11 +62,20 @@ function getTweets() {
   xhr.onreadystatechange = function () {
     if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
       let incoming_tweets = JSON.parse(this.responseText).reverse()
-      incoming_tweets.forEach(tweet => appendTweet(tweet))
+      console.log(incoming_tweets)
+      incoming_tweets.forEach(tweet => prependTweet(tweet))
     }
   }
 
-  xhr.open("GET", url, true)
+  let mostRecentTweet = gElemTweetList.childNodes[1]
+  let mostRecentID = 0
+  if (mostRecentTweet != null) {
+    mostRecentID = mostRecentTweet.getAttribute("data-id")
+  }
+
+  console.log("GET tweets after ID: " + mostRecentID)
+  xhr.open("GET", url + '?id=' + mostRecentID, true)
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   xhr.send(null)
 }
 
@@ -89,9 +98,10 @@ function postHashtags() {
   xhr.send(string)
 }
 
-function appendTweet(tweetData) {
+function prependTweet(tweetData) {
   let tweet = document.createElement('li')
   tweet.classList.add('tweet')
+  tweet.setAttribute('data-id', tweetData['id'])
 
   let tweetHeader = document.createElement('div')
   tweetHeader.classList.add('tweet-header')
@@ -108,7 +118,7 @@ function appendTweet(tweetData) {
   tweetText.classList.add('tweet-text')
   tweetText.textContent = tweetData['text']
 
-  gElemTweetList.append(tweet)
+  gElemTweetList.prepend(tweet)
   tweet.append(tweetHeader)
   tweetHeader.append(tweetUser)
   tweetHeader.append(tweetTime)
@@ -123,6 +133,8 @@ function addHashtag(hashtagText) {
 
   hashtags.push(hashtagText)
   appendHashtag(hashtagText)
+
+  postHashtags()
 }
 
 function removeHashtag(hashtagText) {
@@ -139,6 +151,8 @@ function removeHashtag(hashtagText) {
       break
     }
   }
+
+  postHashtags()
 }
 
 function appendHashtag(hashtagText) {

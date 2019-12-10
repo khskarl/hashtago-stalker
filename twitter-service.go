@@ -95,9 +95,7 @@ func (tweetStream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 		tweets, maxID := tweetStream.fetchRecentTweets(latestTweetID)
 		latestTweetID = maxID
 
-		for i := range tweets {
-			// We `Write` the tweets in reverse because `tweets` is ordered by decreasing date
-			tweet := tweets[len(tweets)-1-i]
+		for _, tweet := range tweets {
 			outTweetChan <- tweet
 		}
 

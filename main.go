@@ -27,11 +27,15 @@ func tweetsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := u.Query()
-
-	id, _ := strconv.ParseInt(params.Get("id"), 10, 64)
+	idParam := params.Get("id")
+	if idParam == "" {
+		return
+	}
+	id, _ := strconv.ParseInt(idParam, 10, 64)
 	fmt.Println("ID : ", id)
 
 	tweets := storage.QueryRecentByID(id)
+	fmt.Println("Tweets: ", tweets)
 	views := make([]tweetView, 0)
 	for _, tweet := range tweets {
 		tweetView := tweetView{
