@@ -30,7 +30,7 @@ let tweets = [
   },
 ]
 
-let hashtags = ["CycleToWork", "CityBike"]
+let hashtags = []
 
 document.addEventListener("DOMContentLoaded", function () {
   getTweets()
@@ -42,13 +42,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Prepopulate main elements
   // tweets.forEach(tweet => appendTweet(tweet))
-  hashtags.forEach(hashtag => appendHashtag('#' + hashtag))
+  let prepopulation = ["CycleToWork", "CityBike"]
+  prepopulation.forEach(hashtag => addHashtag(hashtag))
 
   // Add callbacks
   gElemSearchInput.addEventListener("keyup", function (event) {
     event.preventDefault();
     if (event.keyCode === 13) {
-      appendHashtag("#" + gElemSearchInput.value)
+      addHashtag(gElemSearchInput.value)
       gElemSearchInput.value = ''
     }
   });
@@ -93,9 +94,36 @@ function appendTweet(tweetData) {
   tweet.append(tweetText)
 }
 
+function addHashtag(hashtagText) {
+  for (let i = 0; i < hashtags.length; i++) {
+    if (hashtags[i].toLowerCase() === hashtagText.toLowerCase())
+      return
+  }
+
+  hashtags.push(hashtagText)
+  appendHashtag(hashtagText)
+}
+
+function removeHashtag(hashtagText) {
+  let index = hashtags.indexOf(hashtagText);
+  if (index > -1) {
+    hashtags.splice(index, 1);
+  }
+
+  for (let i = 1; i < gElemHashtagList.childNodes.length; i++) {
+    const entry = gElemHashtagList.childNodes[i]
+
+    if (entry.getAttribute("data-hashtag") === hashtagText) {
+      entry.remove()
+      break
+    }
+  }
+}
+
 function appendHashtag(hashtagText) {
   let hashtagEntry = document.createElement('li')
   hashtagEntry.classList.add('hashtag-entry')
+  hashtagEntry.setAttribute('data-hashtag', hashtagText);
 
   let eye = document.createElement('button')
   eye.textContent = '👁'
@@ -114,11 +142,12 @@ function appendHashtag(hashtagText) {
 
   let hashtag = document.createElement('span')
   hashtag.classList.add('hashtag')
-  hashtag.textContent = hashtagText
+  hashtag.textContent = '#' + hashtagText
 
   let cross = document.createElement('button')
   cross.textContent = '❌'
   cross.addEventListener("click", function () {
+    removeHashtag(hashtagText)
   });
 
 

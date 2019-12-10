@@ -9,7 +9,7 @@ body {
   flex-direction: row;
 
   position: relative;
-  transform: translate(40%, 10%);
+  transform: translate(40%, 0px);
   width: 60%;
 }
 
