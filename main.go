@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/dghubble/go-twitter/twitter"
 )
@@ -27,12 +27,11 @@ func tweetsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := u.Query()
-	fmt.Println(params)
-	hashtags := params.Get("q")
-	fmt.Println("Hashtags are : ", hashtags)
 
-	time := time.Now().AddDate(0, 0, -1)
-	tweets := storage.QueryByTime(time)
+	id, _ := strconv.ParseInt(params.Get("id"), 10, 64)
+	fmt.Println("ID : ", id)
+
+	tweets := storage.QueryRecentByID(id)
 	views := make([]tweetView, 0)
 	for _, tweet := range tweets {
 		tweetView := tweetView{
@@ -47,17 +46,36 @@ func tweetsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(views)
 }
 
+func hashtagsHandler(w http.ResponseWriter, r *http.Request) {
+	type hashtagsView struct {
+		Hashtags []string `json:"hashtags"`
+	}
+
+	var view hashtagsView
+	err := json.NewDecoder(r.Body).Decode(&view)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	hashtags := view.Hashtags
+	stream.Hashtags = hashtags
+
+	fmt.Println("Setting new hashtags: ", stream.Hashtags)
+}
+
+var stream *tweetStream
 var storage *tweetStorage
 
 func main() {
 	hashtags := []string{"#treebybike"}
 
-	tweetStream := newTweetStream(newTwitterClientFromEnv(), hashtags)
+	stream = newTweetStream(newTwitterClientFromEnv(), hashtags)
 	storage = newTweetStorage()
 
 	storeChan := make(chan twitter.Tweet, 30)
 
-	go tweetStream.Write(storeChan)
+	go stream.Write(storeChan)
 	go storage.Read(storeChan)
 
 	port := os.Getenv("PORT")
@@ -69,5 +87,6 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("assets/")))
 	mux.HandleFunc("/tweets", tweetsHandler)
+	mux.HandleFunc("/hashtags", hashtagsHandler)
 	http.ListenAndServe(":"+port, mux)
 }

@@ -57,15 +57,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function getTweets() {
   url = "http://localhost:3000/tweets"
-  let xmlHttp = new XMLHttpRequest()
-  xmlHttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
+
+  let xhr = new XMLHttpRequest()
+  xhr.onreadystatechange = function () {
+    if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
       let incoming_tweets = JSON.parse(this.responseText).reverse()
       incoming_tweets.forEach(tweet => appendTweet(tweet))
     }
   }
-  xmlHttp.open("GET", url, true)
-  xmlHttp.send(null)
+
+  xhr.open("GET", url, true)
+  xhr.send(null)
+}
+
+function postHashtags() {
+  url = "http://localhost:3000/hashtags"
+
+  let xhr = new XMLHttpRequest()
+  xhr.onreadystatechange = function () {
+    if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
+    }
+  }
+
+  xhr.open("POST", url, true)
+  xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+  data = {
+    hashtags: hashtags
+  }
+  string = JSON.stringify(data)
+  console.log(string)
+  xhr.send(string)
 }
 
 function appendTweet(tweetData) {

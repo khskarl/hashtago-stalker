@@ -46,7 +46,7 @@ func sleepPerRateLimit(rateLimit *twitter.RateLimitResource) {
 
 type tweetStream struct {
 	client          *twitter.Client
-	hashtags        []string
+	Hashtags        []string
 	mostRecentTweet *twitter.Tweet
 	rateLimits      *twitter.RateLimit
 }
@@ -56,7 +56,7 @@ func newTweetStream(client *twitter.Client, hashtags []string) *tweetStream {
 }
 
 func (tweetStream *tweetStream) fetchRecentTweets(latestTweetID int64) ([]twitter.Tweet, int64) {
-	query := strings.Join(tweetStream.hashtags[:], " OR ")
+	query := strings.Join(tweetStream.Hashtags[:], " OR ")
 	searchParams := twitter.SearchTweetParams{
 		Query:     query,
 		Count:     10,
@@ -131,18 +131,15 @@ func (storage *tweetStorage) Read(inTweetChan chan twitter.Tweet) {
 	}
 }
 
-func (storage tweetStorage) QueryByTime(time time.Time) []twitter.Tweet {
-	startTimeIndex := sort.Search(len(storage.tweets), func(i int) bool {
-		createdAt, _ := storage.tweets[i].CreatedAtTime()
-		return createdAt.After(time) || createdAt.Equal(time)
+func (storage tweetStorage) QueryRecentByID(referenceID int64) []twitter.Tweet {
+	beginningIndex := sort.Search(len(storage.tweets), func(i int) bool {
+		return storage.tweets[i].ID > referenceID
 	})
 
 	queriedTweets := make([]twitter.Tweet, 0)
 
-	for i := startTimeIndex; i < len(storage.tweets); i++ {
-		createdAt, _ := storage.tweets[i].CreatedAtTime()
-
-		if createdAt.After(time) || createdAt.Equal(time) {
+	for i := beginningIndex; i < len(storage.tweets); i++ {
+		if storage.tweets[i].ID > referenceID {
 			queriedTweets = append(queriedTweets, storage.tweets[i])
 		}
 	}
