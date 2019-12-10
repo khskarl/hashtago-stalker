@@ -1,34 +1,7 @@
 
-var gElemTweetList = null
-var gElemHashtagList = null
-var gElemSearchInput = null
-
-let tweets = [
-  {
-    id: 0,
-    user: 'Gopherius',
-    text: "I'm creating a new unique app called Gophitter!",
-    time: "01/01/2020"
-  },
-  {
-    id: 1,
-    user: 'Gopherson',
-    text: "My dad, Gopher, won't ever forgive #China. \n\n #HongKong",
-    time: "01/01/2019"
-  },
-  {
-    id: 2,
-    user: 'Gopherson',
-    text: "Lorem ipsum ipsum ipsum ipsum ipsum ipsum ipsum",
-    time: "01/01/2019"
-  },
-  {
-    id: 3,
-    user: 'Gopheynman',
-    text: "“Nobody ever figures out what life is all about, and it doesn’t matter. Explore the world. Nearly everything is really interesting if you go into it deeply enough.",
-    time: "01/01/2019"
-  },
-]
+let gElemTweetList = null
+let gElemHashtagList = null
+let gElemSearchInput = null
 
 let hashtags = []
 
@@ -37,10 +10,6 @@ document.addEventListener("DOMContentLoaded", function () {
   gElemTweetList = document.getElementById('tweet-list')
   gElemHashtagList = document.getElementById('hashtag-list')
   gElemSearchInput = document.getElementById('search')
-
-  // Prepopulate main elements
-  let prepopulation = ["CycleToWork", "CityBike"]
-  prepopulation.forEach(hashtag => addHashtag(hashtag))
 
   // Add callbacks
   gElemSearchInput.addEventListener("keyup", function (event) {
@@ -112,7 +81,9 @@ function prependTweet(tweetData) {
 
   let tweetTime = document.createElement('span')
   tweetTime.classList.add('tweet-time')
-  tweetTime.textContent = tweetData['created_at']
+  createdAt = new Date((tweetData['created_at']) * 1000)
+
+  tweetTime.textContent = createdAt
 
   let tweetText = document.createElement('div')
   tweetText.classList.add('tweet-text')
