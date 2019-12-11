@@ -71,7 +71,6 @@ func (api *stalkerAPI) hashtagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var view hashtagsView
-
 	err := json.NewDecoder(r.Body).Decode(&view)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
