@@ -70,7 +70,7 @@ func (stream *tweetStream) fetchRecentTweets(mostRecentID int64) []twitter.Tweet
 	}
 
 	query := strings.Join(stream.Hashtags[:], " OR ")
-	fmt.Println("mostRecentID: ", mostRecentID)
+	fmt.Println("FETCHING RECENT TWEETS: ", mostRecentID)
 
 	searchParams := twitter.SearchTweetParams{
 		Query:     query,
@@ -88,8 +88,7 @@ func (stream *tweetStream) fetchRecentTweets(mostRecentID int64) []twitter.Tweet
 }
 
 func (stream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
-	// Coroutine for reading current rate limits
-	go func() {
+	rateLimitRoutine := func() {
 		for {
 			rateLimits, _, err := stream.client.RateLimits.Status(&twitter.RateLimitParams{Resources: []string{"application", "search"}})
 
@@ -101,7 +100,12 @@ func (stream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 			rateStatusLimit := stream.rateLimits.Resources.Application["/application/rate_limit_status"]
 			sleepPerRateLimit(rateStatusLimit)
 		}
-	}()
+	}
+
+	// Call it once so we have a `stream.rateLimits` instead of `nil`
+	rateLimitRoutine()
+	// Coroutine for reading current rate limits
+	go rateLimitRoutine()
 
 	for {
 		mostRecentID := int64(0)
@@ -110,11 +114,13 @@ func (stream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 		}
 
 		tweets := stream.fetchRecentTweets(mostRecentID)
-		if stream.mostRecentTweet == nil {
-			stream.mostRecentTweet = &tweets[0]
-		}
+		if len(tweets) != 0 {
+			if stream.mostRecentTweet == nil {
+				stream.mostRecentTweet = &tweets[0]
+			}
 
-		stream.findAndSetMostRecentTweet(tweets)
+			stream.findAndSetMostRecentTweet(tweets)
+		}
 
 		for i := range tweets {
 			// We `Write` the tweets in reverse because sending these tweets through the channel
@@ -156,33 +162,27 @@ func (storage *tweetStorage) Read(inTweetChan chan twitter.Tweet) {
 func (storage tweetStorage) QueryRecentByID(referenceID int64, hashtags []string) []twitter.Tweet {
 	filteredTweets := make([]twitter.Tweet, 0)
 	for _, tweet := range storage.tweets {
-		hasMatch := false
+		hasHashtag := false
 
 		for _, hashtag := range hashtags {
 			for _, hashtagEntity := range tweet.Entities.Hashtags {
 				if hashtagEntity.Text == hashtag {
-					hasMatch = true
+					hasHashtag = true
 				}
 			}
 		}
-		if hasMatch {
+
+		if hasHashtag && tweet.ID > referenceID {
 			filteredTweets = append(filteredTweets, tweet)
 		}
 	}
 
-	beginningIndex := sort.Search(len(storage.tweets), func(i int) bool {
-		return storage.tweets[i].ID > referenceID
-	})
-
-	queriedTweets := make([]twitter.Tweet, 0)
-
-	for i := beginningIndex; i < len(storage.tweets); i++ {
-		if storage.tweets[i].ID > referenceID {
-			queriedTweets = append(queriedTweets, storage.tweets[i])
-		}
+	fmt.Println("[QUERIED TWEETS]")
+	for _, t := range filteredTweets {
+		printTweet(&t)
 	}
 
-	return queriedTweets
+	return filteredTweets
 }
 
 func printTweet(tweet *twitter.Tweet) {

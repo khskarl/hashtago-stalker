@@ -62,6 +62,7 @@ func (api *stalkerAPI) tweetsHandler(w http.ResponseWriter, r *http.Request) {
 
 		views = append(views, tweetView)
 	}
+
 	json.NewEncoder(w).Encode(views)
 }
 

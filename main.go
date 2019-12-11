@@ -6,7 +6,7 @@ import (
 
 func main() {
 	stream := newTweetStream(newTwitterClientFromEnv())
-	stream.Hashtags = []string{"citybike"}
+	// stream.Hashtags = []string{"citybike"}
 	storage := newTweetStorage()
 
 	storeChan := make(chan twitter.Tweet, 30)

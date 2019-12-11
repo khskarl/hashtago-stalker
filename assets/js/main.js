@@ -2,6 +2,7 @@
 let gElemTweetList = null
 let gElemHashtagList = null
 let gElemSearchInput = null
+let gMostRecentID = 0
 
 let hashtags = []
 
@@ -20,7 +21,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  postHashtags()
   getTweets()
+
   setInterval(getTweets, 5000)
 });
 
@@ -30,20 +33,17 @@ function getTweets() {
   let xhr = new XMLHttpRequest()
   xhr.onreadystatechange = function () {
     if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
-      let incoming_tweets = JSON.parse(this.responseText).reverse()
+      let incoming_tweets = JSON.parse(this.responseText)
       console.log(incoming_tweets)
       incoming_tweets.forEach(tweet => prependTweet(tweet))
+
+      if (incoming_tweets.length > 0)
+        gMostRecentID = incoming_tweets[incoming_tweets.length - 1]['id']
     }
   }
 
-  let mostRecentTweet = gElemTweetList.childNodes[1]
-  let mostRecentID = 0
-  if (mostRecentTweet != null) {
-    mostRecentID = mostRecentTweet.getAttribute("data-id")
-  }
-
-  console.log("GET tweets after ID: " + mostRecentID)
-  xhr.open("GET", url + '?id=' + mostRecentID, true)
+  console.log("GET tweets after ID: " + gMostRecentID)
+  xhr.open("GET", url + '?id=' + gMostRecentID, true)
   xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   xhr.send(null)
 }
@@ -81,7 +81,8 @@ function prependTweet(tweetData) {
 
   let tweetTime = document.createElement('span')
   tweetTime.classList.add('tweet-time')
-  createdAt = new Date((tweetData['created_at']) * 1000)
+  const FROM_NANO_TO_SEC = 1000
+  createdAt = new Date((tweetData['created_at']) * FROM_NANO_TO_SEC)
 
   tweetTime.textContent = createdAt
 
