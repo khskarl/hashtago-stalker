@@ -46,7 +46,7 @@ function hideTweetsWithHashtag(hashtagText) {
 }
 
 function getTweets() {
-  url = "http://localhost:3000/tweets"
+  url = "/tweets"
 
   let xhr = new XMLHttpRequest()
   xhr.onreadystatechange = function () {
@@ -67,7 +67,7 @@ function getTweets() {
 }
 
 function postHashtags() {
-  url = "http://localhost:3000/hashtags"
+  url = "/hashtags"
 
   let xhr = new XMLHttpRequest()
   xhr.onreadystatechange = function () {

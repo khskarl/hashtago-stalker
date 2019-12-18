@@ -1,0 +1,42 @@
+{
+	"ImportPath": "github.com/khskarl/magrathea-assessment",
+	"GoVersion": "go1.13",
+	"GodepVersion": "v80",
+	"Deps": [
+		{
+			"ImportPath": "github.com/cenkalti/backoff",
+			"Comment": "v3.1.1",
+			"Rev": "1ff1c09ea627d2be64cea605afa999c582c7cd01"
+		},
+		{
+			"ImportPath": "github.com/dghubble/go-twitter/twitter",
+			"Rev": "39e5462e111ffe165c62a88e2c25e1c1d1085bdb"
+		},
+		{
+			"ImportPath": "github.com/dghubble/sling",
+			"Comment": "v1.3.0-3-g0997dd0",
+			"Rev": "0997dd0739eecf8d0d3e5e6e3a9d5e81a1fd5056"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Comment": "v1.0.0-5-gc8c88db",
+			"Rev": "c8c88dbee036db4e4808d1f2ec8c2e15e11c3f80"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context/ctxhttp",
+			"Rev": "ef20fe5d793301b553005db740f730d87993f778"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "858c2ad4c8b6c5d10852cb89079f6ca1c7309787"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/clientcredentials",
+			"Rev": "858c2ad4c8b6c5d10852cb89079f6ca1c7309787"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/internal",
+			"Rev": "858c2ad4c8b6c5d10852cb89079f6ca1c7309787"
+		}
+	]
+}
