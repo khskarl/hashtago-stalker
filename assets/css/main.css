@@ -123,5 +123,6 @@ button:focus {
   color: #999;
 }
 
-.hashtag {
+.hide {
+  display: none;
 }

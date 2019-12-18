@@ -56,7 +56,6 @@ func newTweetStream(client *twitter.Client) *tweetStream {
 }
 
 func (stream *tweetStream) findAndSetMostRecentTweet(tweets []twitter.Tweet) {
-
 	for _, tweet := range tweets {
 		if tweet.ID > stream.mostRecentTweet.ID {
 			stream.mostRecentTweet = &tweet
@@ -66,12 +65,19 @@ func (stream *tweetStream) findAndSetMostRecentTweet(tweets []twitter.Tweet) {
 
 func (stream *tweetStream) fetchRecentTweets(mostRecentID int64) []twitter.Tweet {
 	if len(stream.Hashtags[:]) == 0 {
+		fmt.Println("[Stream] No hashtags defined, fetching no tweets")
 		return make([]twitter.Tweet, 0)
 	}
 
-	query := strings.Join(stream.Hashtags[:], " OR ")
-	fmt.Println("FETCHING RECENT TWEETS: ", mostRecentID)
+	hashtagsWithSymbol := make([]string, 0)
+	for _, hashtagText := range stream.Hashtags {
+		hashtagsWithSymbol = append(hashtagsWithSymbol, string('#')+hashtagText)
+	}
+	query := strings.Join(hashtagsWithSymbol[:], " OR ")
+	// fmt.Println("[Stream] Fetching tweets. Since tweet ID: ", mostRecentID)
 
+	// TODO: Find out if it's possible to exclude retweets
+	// as we don't want retweets.
 	searchParams := twitter.SearchTweetParams{
 		Query:     query,
 		Count:     10,
@@ -87,33 +93,41 @@ func (stream *tweetStream) fetchRecentTweets(mostRecentID int64) []twitter.Tweet
 	return search.Statuses
 }
 
+func (stream *tweetStream) UpdateRateLimits() {
+	rateLimits, _, err := stream.client.RateLimits.Status(&twitter.RateLimitParams{Resources: []string{"application", "search"}})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stream.rateLimits = rateLimits
+}
+
 func (stream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 	rateLimitRoutine := func() {
 		for {
-			rateLimits, _, err := stream.client.RateLimits.Status(&twitter.RateLimitParams{Resources: []string{"application", "search"}})
+			stream.UpdateRateLimits()
 
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			stream.rateLimits = rateLimits
 			rateStatusLimit := stream.rateLimits.Resources.Application["/application/rate_limit_status"]
 			sleepPerRateLimit(rateStatusLimit)
 		}
 	}
 
 	// Call it once so we have a `stream.rateLimits` instead of `nil`
-	rateLimitRoutine()
+	stream.UpdateRateLimits()
 	// Coroutine for reading current rate limits
 	go rateLimitRoutine()
 
 	for {
+
 		mostRecentID := int64(0)
 		if stream.mostRecentTweet != nil {
 			mostRecentID = stream.mostRecentTweet.ID
 		}
 
 		tweets := stream.fetchRecentTweets(mostRecentID)
+		// fmt.Println("[Stream] Fetched: ", len(tweets), " tweets")
+
 		if len(tweets) != 0 {
 			if stream.mostRecentTweet == nil {
 				stream.mostRecentTweet = &tweets[0]
@@ -127,7 +141,13 @@ func (stream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 			// ends up inverting the slice.
 			// Originally `tweets` is ordered by decreasing date.
 			tweet := tweets[len(tweets)-1-i]
-			outTweetChan <- tweet
+
+			// Fetch the original tweet if it's a retweet
+			if tweet.RetweetedStatus == nil {
+				outTweetChan <- tweet
+
+				// tweet = *tweet.RetweetedStatus
+			}
 		}
 
 		tweetLimit := stream.rateLimits.Resources.Search["/search/tweets"]
@@ -153,20 +173,21 @@ func (storage *tweetStorage) Read(inTweetChan chan twitter.Tweet) {
 			return storage.tweets[i].ID < storage.tweets[j].ID
 		})
 
-		fmt.Println("len(storage.tweets): ", len(storage.tweets))
+		fmt.Println("[Storage] Reading new tweet. New storage size: ", len(storage.tweets))
 		printTweet(&tweet)
 		fmt.Println("---------------------------------------------------------------------------")
 	}
 }
 
-func (storage tweetStorage) QueryRecentByID(referenceID int64, hashtags []string) []twitter.Tweet {
+func (storage tweetStorage) QuerySinceID(referenceID int64, hashtags []string) []twitter.Tweet {
+	fmt.Println("[Storage] Querying since ID ", referenceID, " with hashtags: ", hashtags)
 	filteredTweets := make([]twitter.Tweet, 0)
 	for _, tweet := range storage.tweets {
 		hasHashtag := false
 
 		for _, hashtag := range hashtags {
 			for _, hashtagEntity := range tweet.Entities.Hashtags {
-				if hashtagEntity.Text == hashtag {
+				if strings.ToLower(hashtagEntity.Text) == strings.ToLower(hashtag) {
 					hasHashtag = true
 				}
 			}
@@ -177,7 +198,7 @@ func (storage tweetStorage) QueryRecentByID(referenceID int64, hashtags []string
 		}
 	}
 
-	fmt.Println("[QUERIED TWEETS]")
+	fmt.Println("[Storage] <Filtered Tweets>")
 	for _, t := range filteredTweets {
 		printTweet(&t)
 	}
@@ -186,11 +207,17 @@ func (storage tweetStorage) QueryRecentByID(referenceID int64, hashtags []string
 }
 
 func printTweet(tweet *twitter.Tweet) {
+	hashtags := make([]string, 0)
+	for _, hashtagEntity := range tweet.Entities.Hashtags {
+		hashtags = append(hashtags, hashtagEntity.Text)
+	}
+
 	createdAt, _ := tweet.CreatedAtTime()
 	offset, _ := time.ParseDuration("-03.00h")
-	// fmt.Println(tweet.User.Name)
+	fmt.Println(tweet.User.Name)
 	// fmt.Println(tweet.FullText)
 	fmt.Println(tweet.IDStr)
+	fmt.Println(hashtags)
 	fmt.Println(createdAt.UTC().Add(offset))
 	// fmt.Println(tweet.Entities.Hashtags)
 }

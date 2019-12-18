@@ -3,6 +3,7 @@ let gElemTweetList = null
 let gElemHashtagList = null
 let gElemSearchInput = null
 let gMostRecentID = 0
+let gHashtagVisibility = {}
 
 let hashtags = []
 
@@ -27,6 +28,23 @@ document.addEventListener("DOMContentLoaded", function () {
   setInterval(getTweets, 5000)
 });
 
+
+function showTweetsWithHashtag(hashtagText) {
+  const tweets = [...gElemTweetList.children].filter(tweet =>
+    tweet.getAttribute('data-hashtags').toLowerCase().includes(hashtagText.toLowerCase())
+  );
+
+  tweets.forEach(tweet => tweet.classList.remove('hide'))
+}
+
+function hideTweetsWithHashtag(hashtagText) {
+  const tweets = [...gElemTweetList.children].filter(tweet =>
+    tweet.getAttribute('data-hashtags').toLowerCase().includes(hashtagText.toLowerCase())
+  );
+
+  tweets.forEach(tweet => tweet.classList.add('hide'))
+}
+
 function getTweets() {
   url = "http://localhost:3000/tweets"
 
@@ -38,7 +56,7 @@ function getTweets() {
       incoming_tweets.forEach(tweet => prependTweet(tweet))
 
       if (incoming_tweets.length > 0)
-        gMostRecentID = incoming_tweets[incoming_tweets.length - 1]['id']
+        gMostRecentID = BigInt(incoming_tweets[incoming_tweets.length - 1]['id'])
     }
   }
 
@@ -70,7 +88,11 @@ function postHashtags() {
 function prependTweet(tweetData) {
   let tweet = document.createElement('li')
   tweet.classList.add('tweet')
+  if (!anyHashtagVisible(tweetData['hashtags'])) {
+    tweet.classList.add('hide')
+  }
   tweet.setAttribute('data-id', tweetData['id'])
+  tweet.setAttribute('data-hashtags', tweetData['hashtags'])
 
   let tweetHeader = document.createElement('div')
   tweetHeader.classList.add('tweet-header')
@@ -83,7 +105,6 @@ function prependTweet(tweetData) {
   tweetTime.classList.add('tweet-time')
   const FROM_NANO_TO_SEC = 1000
   createdAt = new Date((tweetData['created_at']) * FROM_NANO_TO_SEC)
-
   tweetTime.textContent = createdAt
 
   let tweetText = document.createElement('div')
@@ -103,6 +124,8 @@ function addHashtag(hashtagText) {
       return
   }
 
+  gHashtagVisibility[hashtagText.toLowerCase()] = true
+
   hashtags.push(hashtagText)
   appendHashtag(hashtagText)
 
@@ -115,8 +138,8 @@ function removeHashtag(hashtagText) {
     hashtags.splice(index, 1);
   }
 
-  for (let i = 1; i < gElemHashtagList.childNodes.length; i++) {
-    const entry = gElemHashtagList.childNodes[i]
+  for (let i = 0; i < gElemHashtagList.children.length; i++) {
+    const entry = gElemHashtagList.children[i]
 
     if (entry.getAttribute("data-hashtag") === hashtagText) {
       entry.remove()
@@ -140,10 +163,16 @@ function appendHashtag(hashtagText) {
     if (toggleToVisible) {
       eye.textContent = '👁'
       hashtagEntry.classList.remove('greyed')
+
+      gHashtagVisibility[hashtagText.toLowerCase()] = true
+      showTweetsWithHashtag(hashtagText.toLowerCase())
     }
     else {
       eye.textContent = '⎼'
       hashtagEntry.classList.add('greyed')
+
+      gHashtagVisibility[hashtagText.toLowerCase()] = false
+      hideTweetsWithHashtag(hashtagText.toLowerCase())
     }
   });
 
@@ -163,4 +192,13 @@ function appendHashtag(hashtagText) {
   hashtagEntry.append(cross)
 
   gElemHashtagList.append(hashtagEntry)
+}
+
+function anyHashtagVisible(hashtagList) {
+  let anyVisible = false
+  hashtagList.forEach(hashtag => {
+    if (gHashtagVisibility[hashtag]) anyVisible = true
+  })
+
+  return anyVisible
 }
