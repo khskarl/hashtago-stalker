@@ -13,7 +13,6 @@ Each component is written to be minimal and responsible for a single class of ta
 `Stalker API` is exclusively responsible for managing the backend API to interact with the frontend system.
 
 ## Installing
--------
 Clone the repository into your `$GOPATH`. While inside the repository run
 `go build` to build the `hashtago-stalker` executable.
 
@@ -23,7 +22,6 @@ To run the program, first do the `environment setup` and execute the executable 
 ```
 
 ## Environment setup
--------
 The program needs two environment variables to be set, `TWITTER_CONSUMER_KEY` and `TWITTER_CONSUMER_SECRET`.
 This can be done in _bash/zsh/any-bash-syntax_:
 ```
@@ -38,10 +36,8 @@ set -x TWITTER_CONSUMER_SECRET your_wonderful_consumer_secret_here
 Optionally you can also set the server port through the env variable `PORT`, otherwise it will default to the port `3000`.
 
 
-## Known issues and bugs
--------
-- Sometimes tweets are queried twice.
+## Known issues
+- 🐤
 
 ## Future improvements
--------
 - Add tests. Due my lack of experience with Go and the diversity of tweet data to be mocked, writing tests isn't trivial

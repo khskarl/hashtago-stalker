@@ -142,12 +142,7 @@ func (stream *tweetStream) Write(outTweetChan chan twitter.Tweet) {
 			// Originally `tweets` is ordered by decreasing date.
 			tweet := tweets[len(tweets)-1-i]
 
-			// Fetch the original tweet if it's a retweet
-			if tweet.RetweetedStatus == nil {
-				outTweetChan <- tweet
-
-				// tweet = *tweet.RetweetedStatus
-			}
+			outTweetChan <- tweet
 		}
 
 		tweetLimit := stream.rateLimits.Resources.Search["/search/tweets"]
@@ -193,7 +188,7 @@ func (storage tweetStorage) QuerySinceID(referenceID int64, hashtags []string) [
 			}
 		}
 
-		if hasHashtag && tweet.ID > referenceID {
+		if hasHashtag && tweet.ID > referenceID && tweet.RetweetedStatus == nil {
 			filteredTweets = append(filteredTweets, tweet)
 		}
 	}
