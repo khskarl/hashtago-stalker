@@ -17,7 +17,13 @@ document.addEventListener("DOMContentLoaded", function () {
   gElemSearchInput.addEventListener("keyup", function (event) {
     event.preventDefault();
     if (event.keyCode === 13) {
-      addHashtag(gElemSearchInput.value)
+      let hashtagText = gElemSearchInput.value
+      while (hashtagText.charAt(0) === '#') {
+        hashtagText = hashtagText.substr(1)
+        console.log(hashtagText)
+      }
+
+      addHashtag(hashtagText)
       gElemSearchInput.value = ''
     }
   });
