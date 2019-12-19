@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/khskarl/magrathea-assessment",
+	"ImportPath": "github.com/khskarl/hashtago-stalker",
 	"GoVersion": "go1.13",
 	"GodepVersion": "v80",
 	"Deps": [
